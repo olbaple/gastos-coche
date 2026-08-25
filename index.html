@@ -887,16 +887,30 @@
   }
 
   function renderHistory(){
-    var items = state.trips.map(function(t){ return { type: "trip", date: t.date, data: t }; })
-      .concat((state.payments || []).map(function(p){ return { type: "payment", date: p.date, data: p }; }));
+    var onlyMine = !!whoami && myRole() === "usuario";
+    var trips = state.trips;
+    var payments = state.payments || [];
+    if (onlyMine){
+      trips = trips.filter(function(t){
+        if (t.driver === whoami) return true;
+        return ["ida","vuelta"].some(function(d){
+          var leg = t.legs && t.legs[d];
+          return leg && (leg.passengers || []).indexOf(whoami) !== -1;
+        });
+      });
+      payments = payments.filter(function(p){ return p.from === whoami || p.to === whoami; });
+    }
+    var items = trips.map(function(t){ return { type: "trip", date: t.date, data: t }; })
+      .concat(payments.map(function(p){ return { type: "payment", date: p.date, data: p }; }));
     if (items.length === 0){
-      return '<section class="block"><h2>Historial</h2><p class="empty-note">Todavía no se ha registrado ningún trayecto.</p></section>';
+      var emptyMsg = onlyMine ? "No tienes trayectos ni pagos registrados." : "Todavía no se ha registrado ningún trayecto.";
+      return '<section class="block"><h2>Historial</h2><p class="empty-note">' + emptyMsg + '</p></section>';
     }
     items.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
     var cards = items.map(function(item){
       return item.type === "trip" ? renderTripCard(item.data) : renderPaymentCard(item.data);
     }).join("");
-    return '<section class="block"><h2>Historial <span class="count">' + state.trips.length + '</span></h2><div class="history-list">' + cards + '</div></section>';
+    return '<section class="block"><h2>Historial <span class="count">' + trips.length + '</span></h2><div class="history-list">' + cards + '</div></section>';
   }
 
   function attachEvents(){
