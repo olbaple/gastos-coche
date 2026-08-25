@@ -669,6 +669,7 @@
   }
 
   function renderPeople(){
+    if (whoami && myRole() === "usuario" && !canManageGroup()) return "";
     var manage = canManageGroup();
     var chips = sortedPeople().map(function(p){
       var roleBit = manage ?
@@ -712,6 +713,7 @@
 
   function renderTripFormSection(){
     if (!canAddTrip()){
+      if (whoami && myRole() === "usuario") return "";
       if (state.people.length === 0) return "";
       return '<section class="block"><h2>Añadir trayecto</h2><p class="empty-note">Elige quién eres arriba (como conductor/a o administrador/a) para poder añadir trayectos.</p></section>';
     }
