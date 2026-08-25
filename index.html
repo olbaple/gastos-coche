@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ruta y Cuenta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='13' font-size='14'%3E%F0%9F%9A%97%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap">
+<style id="app-style">
+  :root{
+    --paper:#eef2ef;
+    --surface:#ffffff;
+    --surface-2:#e2e9e4;
+    --ink:#16211c;
+    --ink-soft:#54655c;
+    --ink-faint:#8b978f;
+    --line:rgba(22,33,28,0.14);
+    --line-strong:rgba(22,33,28,0.28);
+    --accent:#1f7a5c;
+    --accent-strong:#124f3b;
+    --accent-soft:rgba(31,122,92,0.12);
+    --amber:#b9740f;
+    --amber-soft:rgba(185,116,15,0.14);
+    --debt:#a8412a;
+    --debt-soft:rgba(168,65,42,0.12);
+    --credit:#1f7a5c;
+    --shadow:0 1px 2px rgba(22,33,28,0.07), 0 10px 28px -16px rgba(22,33,28,0.28);
+    --radius-s:8px;
+    --radius-m:14px;
+    --font-display:'Overpass',ui-sans-serif,system-ui,sans-serif;
+    --font-body:'Work Sans',ui-sans-serif,system-ui,sans-serif;
+    --font-mono:'Overpass Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0f1512;
+      --surface:#161f1a;
+      --surface-2:#1e2923;
+      --ink:#e8eee9;
+      --ink-soft:#a2b2a8;
+      --ink-faint:#6c7d72;
+      --line:rgba(232,238,233,0.13);
+      --line-strong:rgba(232,238,233,0.26);
+      --accent:#49bd91;
+      --accent-strong:#7ed9b4;
+      --accent-soft:rgba(73,189,145,0.16);
+      --amber:#e0a743;
+      --amber-soft:rgba(224,167,67,0.16);
+      --debt:#e08469;
+      --debt-soft:rgba(224,132,105,0.16);
+      --credit:#49bd91;
+      --shadow:0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0f1512;
+    --surface:#161f1a;
+    --surface-2:#1e2923;
+    --ink:#e8eee9;
+    --ink-soft:#a2b2a8;
+    --ink-faint:#6c7d72;
+    --line:rgba(232,238,233,0.13);
+    --line-strong:rgba(232,238,233,0.26);
+    --accent:#49bd91;
+    --accent-strong:#7ed9b4;
+    --accent-soft:rgba(73,189,145,0.16);
+    --amber:#e0a743;
+    --amber-soft:rgba(224,167,67,0.16);
+    --debt:#e08469;
+    --debt-soft:rgba(224,132,105,0.16);
+    --credit:#49bd91;
+    --shadow:0 1px 2px rgba(0,0,0,0.35), 0 14px 34px -18px rgba(0,0,0,0.7);
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:15.5px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  a{color:var(--accent-strong);}
+  .wrap{max-width:840px; margin:0 auto; padding:0 20px 80px;}
+  header.top{
+    padding:36px 20px 28px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  .top-inner{max-width:840px; margin:0 auto;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:var(--font-mono); font-size:11.5px; font-weight:600;
+    letter-spacing:0.09em; text-transform:uppercase;
+    color:var(--accent-strong);
+    background:var(--accent-soft);
+    padding:5px 11px; border-radius:999px;
+    margin-bottom:14px;
+  }
+  .eyebrow svg{width:13px; height:13px; display:block;}
+  h1{
+    font-family:var(--font-display); font-weight:800;
+    font-size:clamp(28px,4.5vw,38px);
+    letter-spacing:-0.01em;
+    margin:0 0 8px;
+    text-wrap:balance;
+  }
+  .sub{color:var(--ink-soft); margin:0; max-width:52ch; font-size:15px;}
+  h2{
+    font-family:var(--font-display); font-weight:700;
+    font-size:17px; letter-spacing:0.01em;
+    margin:0 0 14px;
+    display:flex; align-items:baseline; gap:8px;
+  }
+  h2 .count{font-family:var(--font-mono); font-weight:600; font-size:13px; color:var(--ink-faint);}
+  section.block{padding-top:34px;}
+  .banner-ro{
+    margin-top:24px; padding:12px 16px; border-radius:var(--radius-s);
+    background:var(--amber-soft); color:var(--ink);
+    border:1px solid var(--amber);
+    font-size:13.5px;
+  }
+  .banner-ro .btn{margin-left:8px;}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper);
+    padding:10px 18px; border-radius:999px; font-size:13.5px;
+    box-shadow:var(--shadow); z-index:40;
+  }
+  :root[data-theme="dark"] .toast, :root:not([data-theme="light"]) .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong);}
+
+  /* whoami */
+  .whoami-bar{
+    margin-top:20px; padding:11px 16px; border-radius:var(--radius-s);
+    background:var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    font-size:13px; color:var(--ink-soft);
+  }
+  .whoami-bar b{color:var(--ink); font-weight:600;}
+  .whoami-bar select{width:auto; min-width:160px; padding:6px 9px; font-size:13px;}
+  .whoami-hint{margin-top:6px; font-size:12px; color:var(--ink-faint);}
+
+  /* balances */
+  .balances{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+    gap:10px;
+  }
+  .balance-card{
+    background:var(--surface); border:1px solid var(--line);
+    border-left:4px solid var(--ink-faint);
+    border-radius:var(--radius-s);
+    padding:13px 14px;
+  }
+  .balance-card.pos{border-left-color:var(--credit);}
+  .balance-card.neg{border-left-color:var(--debt);}
+  .balance-name{font-size:13.5px; font-weight:600; margin-bottom:6px;}
+  .balance-amt{font-family:var(--font-mono); font-weight:700; font-size:19px; font-variant-numeric:tabular-nums;}
+  .balance-amt.pos{color:var(--credit);}
+  .balance-amt.neg{color:var(--debt);}
+  .balance-label{font-size:11.5px; color:var(--ink-faint); margin-top:3px;}
+  .empty-note{color:var(--ink-faint); font-size:13.5px; padding:6px 0;}
+
+  /* settlements */
+  .settle-list{display:flex; flex-direction:column; gap:8px;}
+  .settle-row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-s); padding:10px 14px;
+    font-size:14px;
+  }
+  .settle-row .arrow{color:var(--ink-faint);}
+  .settle-row .amt{
+    margin-left:auto; font-family:var(--font-mono); font-weight:700;
+    font-variant-numeric:tabular-nums; color:var(--amber);
+  }
+  .settle-row b{font-weight:600;}
+  .btn-sm{padding:5px 10px; font-size:12.5px;}
+
+  /* people chips */
+  .people-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:999px; padding:6px 8px 6px 13px; font-size:13.5px;
+  }
+  .chip button{
+    all:unset; cursor:pointer; width:17px; height:17px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-faint); font-size:12px; line-height:1;
+  }
+  .chip button:hover{background:var(--debt-soft); color:var(--debt);}
+  .chip button:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+  .add-person{display:flex; gap:8px; max-width:340px;}
+  .role-tag{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em;}
+  .role-pick{width:auto; padding:3px 6px; font-size:11px; border-radius:6px;}
+
+  input[type="text"], input[type="number"], input[type="date"], select{
+    font-family:var(--font-body); font-size:14.5px; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line-strong);
+    border-radius:var(--radius-s); padding:9px 11px; width:100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:1px;
+  }
+  input::placeholder{color:var(--ink-faint);}
+  label.field{display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; letter-spacing:0.01em;}
+
+  button.btn{
+    font-family:var(--font-body); font-weight:600; font-size:14px;
+    border-radius:var(--radius-s); border:1px solid transparent;
+    padding:9px 16px; cursor:pointer;
+  }
+  button.btn-primary{background:var(--accent); color:#fff;}
+  button.btn-primary:hover{background:var(--accent-strong);}
+  button.btn-primary:disabled{background:var(--ink-faint); cursor:not-allowed;}
+  button.btn-ghost{background:transparent; border-color:var(--line-strong); color:var(--ink);}
+  button.btn-ghost:hover{background:var(--surface-2);}
+
+  /* trip form ticket */
+  .ticket-form{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-m); box-shadow:var(--shadow);
+    padding:20px 22px;
+  }
+  .ticket-form .date-row{display:flex; align-items:end; gap:14px; flex-wrap:wrap; margin-bottom:18px;}
+  .date-row .field-wrap{min-width:180px;}
+  .leg-block{
+    border:1px dashed var(--line-strong); border-radius:var(--radius-s);
+    padding:14px 16px; margin-bottom:14px;
+  }
+  .leg-head{display:flex; align-items:center; gap:9px; margin-bottom:12px;}
+  .leg-head .dir-icon{width:18px; height:18px; color:var(--accent); flex:none;}
+  .leg-head .dir-title{font-family:var(--font-display); font-weight:700; font-size:14.5px; flex:1;}
+  .leg-fields{display:flex; flex-direction:column; gap:12px;}
+  .leg-fields .cost-field{max-width:180px;}
+  .pass-list{display:flex; flex-wrap:wrap; gap:6px 14px;}
+  .pass-list label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;}
+  .pass-list input{width:auto;}
+  .form-actions{display:flex; justify-content:flex-end; margin-top:4px;}
+
+  /* history */
+  .history-list{display:flex; flex-direction:column; gap:14px;}
+  .trip-card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-m); overflow:hidden;
+  }
+  .trip-head{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 18px; border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+  }
+  .trip-date{font-family:var(--font-mono); font-weight:700; font-size:13.5px; letter-spacing:0.02em; text-transform:capitalize;}
+  .trip-driver{font-size:12.5px; color:var(--ink-soft);}
+  .trip-del{margin-left:auto;}
+  .trip-del button{
+    all:unset; cursor:pointer; color:var(--ink-faint); font-size:12.5px;
+    padding:4px 8px; border-radius:6px;
+  }
+  .trip-del button:hover{background:var(--debt-soft); color:var(--debt);}
+  .leg-row{display:flex; align-items:center; gap:12px; padding:13px 18px;}
+  .leg-row + .leg-row{border-top:1px dashed var(--line);}
+  .leg-row .dir-icon{width:17px; height:17px; color:var(--accent); flex:none;}
+  .leg-row .leg-text{flex:1; min-width:0;}
+  .leg-dir-label{font-weight:600; font-size:13px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em;}
+  .leg-pass{color:var(--ink-soft); font-size:12.5px; margin-top:2px;}
+  .leg-cost{font-family:var(--font-mono); font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .payment-card{border-left:3px solid var(--amber);}
+
+  @media (max-width:520px){
+    .balances{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+  "use strict";
+
+  var DB_URL = "https://gastos-coche-39329-default-rtdb.europe-west1.firebasedatabase.app";
+  var STATE_URL = DB_URL + "/state.json";
+  var POLL_MS = 4000;
+  var WHOAMI_KEY = "gastos-coche-whoami-v1";
+  var ROLES = ["admin", "conductor", "usuario"];
+
+  var state = { people: [], trips: [], lastCost: {}, roles: {}, payments: [] };
+  var loaded = false;
+  var connOk = false;
+  var saving = false;
+
+  var whoami = "";
+  try { whoami = localStorage.getItem(WHOAMI_KEY) || ""; } catch(e){ whoami = ""; }
+
+  function todayISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear()+"-"+m+"-"+day;
+  }
+
+  function normalizeState(raw){
+    if (!raw || typeof raw !== "object") raw = {};
+    if (!Array.isArray(raw.people)) raw.people = [];
+    if (!Array.isArray(raw.trips)) raw.trips = [];
+    if (!raw.lastCost || typeof raw.lastCost !== "object") raw.lastCost = {};
+    if (!raw.roles || typeof raw.roles !== "object") raw.roles = {};
+    if (!Array.isArray(raw.payments)) raw.payments = [];
+    return raw;
+  }
+
+  function fetchState(){
+    return fetch(STATE_URL, { cache: "no-store" }).then(function(r){
+      if (!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }).then(normalizeState);
+  }
+
+  function pushState(newState){
+    return fetch(STATE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newState)
+    }).then(function(r){ if (!r.ok) throw new Error("http " + r.status); });
+  }
+
+  function legDefaults(dir, lastCostObj){
+    var lc = lastCostObj || state.lastCost || {};
+    return { passengers: {}, cost: (lc[dir] != null ? String(lc[dir]) : "") };
+  }
+
+  var draft = {
+    date: todayISO(),
+    newPersonName: "",
+    driver: "",
+    ida: legDefaults("ida"),
+    vuelta: legDefaults("vuelta")
+  };
+
+  function uid(){ return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function sortedPeople(){
+    return state.people.slice().sort(function(a,b){ return a.localeCompare(b, "es"); });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  function formatCurrency(n){
+    var v = Math.round((n + Number.EPSILON) * 100) / 100;
+    return v.toLocaleString("es-ES", { style:"currency", currency:"EUR" });
+  }
+
+  function formatDateLong(iso){
+    try {
+      var d = new Date(iso + "T00:00:00");
+      var s = new Intl.DateTimeFormat("es-ES", { weekday:"short", day:"2-digit", month:"short" }).format(d);
+      return s.replace(/^\w/, function(c){ return c.toUpperCase(); });
+    } catch(e){ return iso; }
+  }
+
+  function iconIda(){
+    return '<svg class="dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="18" y2="12"></line><polyline points="12 6 18 12 12 18"></polyline></svg>';
+  }
+  function iconVuelta(){
+    return '<svg class="dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="12" x2="6" y2="12"></line><polyline points="12 6 6 12 12 18"></polyline></svg>';
+  }
+  function iconRoute(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.2"></circle><circle cx="19" cy="6" r="2.2"></circle><path d="M6.7 16.6 C 10 12, 10 10, 13 8.5 S 17 6.5 17.3 7.4"></path></svg>';
+  }
+  function iconCheck(){
+    return '<svg class="dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  }
+
+  function hasAdmin(){
+    return state.people.some(function(p){ return roleOf(p) === "admin"; });
+  }
+  function roleOf(name){
+    return (name && state.roles[name]) || "conductor";
+  }
+  function roleLabel(r){
+    return r === "admin" ? "Administrador/a" : (r === "usuario" ? "Solo lectura" : "Conductor/a");
+  }
+  function myRole(){
+    return whoami ? roleOf(whoami) : "usuario";
+  }
+  function canManageGroup(){
+    return myRole() === "admin" || !hasAdmin();
+  }
+  function canAddTrip(){
+    return myRole() === "admin" || myRole() === "conductor";
+  }
+  function canDeleteTrip(){
+    return myRole() === "admin";
+  }
+  function canSettleRow(row){
+    if (myRole() === "admin") return true;
+    return myRole() === "conductor" && !!whoami && (row.from === whoami || row.to === whoami);
+  }
+
+  function setWhoami(name){
+    whoami = name || "";
+    try {
+      if (whoami) localStorage.setItem(WHOAMI_KEY, whoami);
+      else localStorage.removeItem(WHOAMI_KEY);
+    } catch(e){}
+    render();
+  }
+
+  function computeBalances(st){
+    var balances = {};
+    st.people.forEach(function(p){ balances[p] = 0; });
+    st.trips.forEach(function(trip){
+      var driver = trip.driver;
+      if (!driver) return;
+      ["ida","vuelta"].forEach(function(dir){
+        var leg = trip.legs && trip.legs[dir];
+        if (!leg) return;
+        var set = {};
+        var participants = [];
+        [driver].concat(leg.passengers || []).forEach(function(p){
+          if (p && !set[p] && (p in balances)){ set[p] = true; participants.push(p); }
+        });
+        if (participants.length === 0) return;
+        var cost = Number(leg.cost) || 0;
+        var share = cost / participants.length;
+        participants.forEach(function(p){
+          if (p === driver) balances[p] += (cost - share);
+          else balances[p] -= share;
+        });
+      });
+    });
+    (st.payments || []).forEach(function(pmt){
+      var amt = Number(pmt.amount) || 0;
+      if (pmt.from in balances) balances[pmt.from] += amt;
+      if (pmt.to in balances) balances[pmt.to] -= amt;
+    });
+    return balances;
+  }
+
+  function computePairwiseLedger(st){
+    var owed = {};
+    function add(debtor, driver, amt){
+      if (!owed[debtor]) owed[debtor] = {};
+      owed[debtor][driver] = (owed[debtor][driver] || 0) + amt;
+    }
+    st.trips.forEach(function(trip){
+      var driver = trip.driver;
+      if (!driver) return;
+      ["ida","vuelta"].forEach(function(dir){
+        var leg = trip.legs && trip.legs[dir];
+        if (!leg) return;
+        var passengers = (leg.passengers || []).filter(function(p){ return p !== driver; });
+        var participants = passengers.length + 1;
+        var cost = Number(leg.cost) || 0;
+        var share = cost / participants;
+        passengers.forEach(function(p){ add(p, driver, share); });
+      });
+    });
+    (st.payments || []).forEach(function(p){
+      add(p.from, p.to, -(Number(p.amount) || 0));
+    });
+    return owed;
+  }
+
+  function computeSettlements(st){
+    var owed = computePairwiseLedger(st);
+    var people = st.people;
+    var settlements = [];
+    for (var i = 0; i < people.length; i++){
+      for (var j = i + 1; j < people.length; j++){
+        var a = people[i], b = people[j];
+        var aOwesB = (owed[a] && owed[a][b]) || 0;
+        var bOwesA = (owed[b] && owed[b][a]) || 0;
+        var net = Math.round((aOwesB - bOwesA) * 100) / 100;
+        if (net > 0.005) settlements.push({ from: a, to: b, amount: net });
+        else if (net < -0.005) settlements.push({ from: b, to: a, amount: -net });
+      }
+    }
+    settlements.sort(function(x,y){ return y.amount - x.amount; });
+    return settlements;
+  }
+
+  function personUsed(name){
+    var inTrips = state.trips.some(function(t){
+      if (t.driver === name) return true;
+      return ["ida","vuelta"].some(function(d){
+        var leg = t.legs && t.legs[d];
+        return leg && (leg.passengers||[]).indexOf(name) !== -1;
+      });
+    });
+    if (inTrips) return true;
+    return (state.payments || []).some(function(p){ return p.from === name || p.to === name; });
+  }
+
+  function toast(msg){
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 3200);
+  }
+
+  function saveState(newState){
+    var prev = state;
+    state = newState;
+    render();
+    saving = true;
+    pushState(state).catch(function(){
+      state = prev;
+      render();
+      toast("No se ha podido guardar. Comprueba tu conexión e inténtalo de nuevo.");
+    }).then(function(){ saving = false; }, function(){ saving = false; });
+  }
+
+  function addPerson(){
+    if (!canManageGroup()) return;
+    var name = (draft.newPersonName || "").trim();
+    if (!name) return;
+    if (state.people.indexOf(name) !== -1){ toast("Esa persona ya está en la lista."); return; }
+    var roles = Object.assign({}, state.roles);
+    roles[name] = "conductor";
+    var next = Object.assign({}, state, { people: state.people.concat([name]), roles: roles });
+    draft.newPersonName = "";
+    saveState(next);
+  }
+
+  function removePerson(name){
+    if (!canManageGroup()) return;
+    if (personUsed(name)){
+      toast(name + " ya tiene trayectos o pagos registrados y no se puede quitar.");
+      return;
+    }
+    var roles = Object.assign({}, state.roles);
+    delete roles[name];
+    var next = Object.assign({}, state, { people: state.people.filter(function(p){ return p !== name; }), roles: roles });
+    if (whoami === name) setWhoami("");
+    saveState(next);
+  }
+
+  function setRole(name, role){
+    if (!canManageGroup()) return;
+    if (ROLES.indexOf(role) === -1) return;
+    var roles = Object.assign({}, state.roles);
+    roles[name] = role;
+    saveState(Object.assign({}, state, { roles: roles }));
+  }
+
+  function settleRow(row){
+    if (!canSettleRow(row)) return;
+    var payment = { id: uid(), from: row.from, to: row.to, amount: row.amount, date: todayISO() };
+    saveState(Object.assign({}, state, { payments: (state.payments || []).concat([payment]) }));
+  }
+
+  function deletePayment(id){
+    if (!canManageGroup()) return;
+    if (!confirm("¿Eliminar este pago registrado?")) return;
+    saveState(Object.assign({}, state, { payments: (state.payments || []).filter(function(p){ return p.id !== id; }) }));
+  }
+
+  function deleteTrip(id){
+    if (!canDeleteTrip()) return;
+    if (!confirm("¿Eliminar este trayecto del historial?")) return;
+    var next = Object.assign({}, state, { trips: state.trips.filter(function(t){ return t.id !== id; }) });
+    saveState(next);
+  }
+
+  function submitTrip(){
+    if (!canAddTrip()) return;
+    if (state.people.length === 0) return;
+    if (!draft.driver){ toast("Falta elegir quién conduce."); return; }
+    var legs = {};
+    var lastCost = Object.assign({}, state.lastCost || {});
+    var invalid = false;
+    ["ida","vuelta"].forEach(function(dir){
+      var d = draft[dir];
+      var cost = parseFloat((d.cost || "").toString().replace(",", "."));
+      if (isNaN(cost) || cost < 0){ toast("Revisa el coste de " + (dir === "ida" ? "la ida" : "la vuelta") + "."); invalid = true; return; }
+      var passengers = Object.keys(d.passengers).filter(function(p){ return d.passengers[p] && p !== draft.driver; });
+      legs[dir] = { passengers: passengers, cost: cost };
+      lastCost[dir] = cost;
+    });
+    if (invalid) return;
+    var trip = { id: uid(), date: draft.date || todayISO(), driver: draft.driver, legs: legs };
+    var next = Object.assign({}, state, { trips: [trip].concat(state.trips), lastCost: lastCost });
+    draft = {
+      date: draft.date,
+      newPersonName: "",
+      driver: draft.driver,
+      ida: legDefaults("ida", lastCost),
+      vuelta: legDefaults("vuelta", lastCost)
+    };
+    saveState(next);
+  }
+
+  function renderHeader(){
+    return '' +
+    '<header class="top"><div class="top-inner">' +
+      '<span class="eyebrow">' + iconRoute() + ' Ruta compartida</span>' +
+      '<h1>Ruta y Cuenta</h1>' +
+      '<p class="sub">Apuntad quién lleva el coche cada día y quién paga qué, y aquí queda el balance de todo el grupo.</p>' +
+    '</div></header>';
+  }
+
+  function renderWhoami(){
+    if (state.people.length === 0) return "";
+    var options = sortedPeople().map(function(p){
+      return '<option value="' + escapeHtml(p) + '"' + (whoami === p ? " selected" : "") + '>' + escapeHtml(p) + '</option>';
+    }).join("");
+    var label = whoami ?
+      ("Estás viendo como <b>" + escapeHtml(whoami) + "</b> · " + roleLabel(myRole())) :
+      "Elige quién eres para poder añadir trayectos o saldar cuentas.";
+    var hint = !hasAdmin() ?
+      '<div class="whoami-hint">Todavía no hay ningún administrador/a: cualquiera puede gestionar personas y roles hasta que se asigne uno en "Personas".</div>' : "";
+    return '<div class="whoami-bar"><span>' + label + '</span>' +
+        '<select id="whoami-select" data-action="set-whoami"><option value="">— Elegir quién eres —</option>' + options + '</select>' +
+      '</div>' + hint;
+  }
+
+  function renderBalances(){
+    if (state.people.length === 0){
+      return '<section class="block"><h2>Balance</h2><p class="empty-note">Añade personas al grupo para empezar a repartir gastos.</p></section>';
+    }
+    var balances = computeBalances(state);
+    var visible = canManageGroup() ? sortedPeople() : (whoami ? [whoami] : []);
+    if (visible.length === 0){
+      return '<section class="block"><h2>Balance</h2><p class="empty-note">Elige quién eres arriba para ver tu balance.</p></section>';
+    }
+    var cards = visible.map(function(p){
+      var amt = Math.round((balances[p] || 0) * 100) / 100;
+      var cls = amt > 0.005 ? "pos" : (amt < -0.005 ? "neg" : "");
+      var label = amt > 0.005 ? "le deben" : (amt < -0.005 ? "debe" : "en paz");
+      return '<div class="balance-card ' + cls + '">' +
+        '<div class="balance-name">' + escapeHtml(p) + '</div>' +
+        '<div class="balance-amt ' + cls + '">' + formatCurrency(Math.abs(amt)) + '</div>' +
+        '<div class="balance-label">' + label + '</div>' +
+      '</div>';
+    }).join("");
+    return '<section class="block"><h2>Balance</h2><div class="balances">' + cards + '</div></section>';
+  }
+
+  function renderSettlements(){
+    if (state.people.length === 0) return "";
+    var settlements = computeSettlements(state);
+    var seeAll = canManageGroup();
+    if (!seeAll){
+      settlements = whoami ? settlements.filter(function(s){ return s.from === whoami || s.to === whoami; }) : [];
+    }
+    if (settlements.length === 0){
+      var msg = (!seeAll && !whoami) ? "Elige quién eres arriba para ver tus cuentas." : "Nadie debe nada ahora mismo.";
+      return '<section class="block"><h2>Para saldar cuentas</h2><p class="empty-note">' + msg + '</p></section>';
+    }
+    var rows = settlements.map(function(s){
+      var canSettle = canSettleRow(s);
+      return '<div class="settle-row"><b>' + escapeHtml(s.from) + '</b><span class="arrow">paga a</span><b>' + escapeHtml(s.to) + '</b><span class="amt">' + formatCurrency(s.amount) + '</span>' +
+        (canSettle ? '<button type="button" class="btn btn-ghost btn-sm" data-action="settle-row" data-from="' + escapeHtml(s.from) + '" data-to="' + escapeHtml(s.to) + '" data-amount="' + s.amount + '">Marcar pagado</button>' : '') +
+      '</div>';
+    }).join("");
+    return '<section class="block"><h2>Para saldar cuentas</h2><div class="settle-list">' + rows + '</div></section>';
+  }
+
+  function renderPeople(){
+    var manage = canManageGroup();
+    var chips = sortedPeople().map(function(p){
+      var roleBit = manage ?
+        ('<select class="role-pick" data-action="set-role" data-name="' + escapeHtml(p) + '">' +
+          ROLES.map(function(r){ return '<option value="' + r + '"' + (roleOf(p) === r ? " selected" : "") + '>' + roleLabel(r) + '</option>'; }).join("") +
+        '</select>') :
+        ('<span class="role-tag">' + roleLabel(roleOf(p)) + '</span>');
+      return '<span class="chip">' + escapeHtml(p) + roleBit +
+        (manage ? ' <button type="button" data-action="remove-person" data-name="' + escapeHtml(p) + '" aria-label="Quitar ' + escapeHtml(p) + '">&times;</button>' : '') +
+      '</span>';
+    }).join("");
+    var addForm = manage ? (
+      '<div class="add-person">' +
+        '<input type="text" id="new-person-input" placeholder="Nombre" value="' + escapeHtml(draft.newPersonName) + '">' +
+        '<button type="button" class="btn btn-ghost" data-action="add-person">Añadir</button>' +
+      '</div>'
+    ) : "";
+    return '<section class="block"><h2>Personas <span class="count">' + state.people.length + '</span></h2>' +
+      (chips ? '<div class="people-row">' + chips + '</div>' : '<p class="empty-note">Todavía no hay nadie en el grupo.</p>') +
+      addForm +
+    '</section>';
+  }
+
+  function renderLegBlock(dir){
+    var d = draft[dir];
+    var title = dir === "ida" ? "Ida" : "Vuelta";
+    var icon = dir === "ida" ? iconIda() : iconVuelta();
+    var passengerBoxes = sortedPeople().filter(function(p){ return p !== draft.driver; }).map(function(p){
+      var checked = d.passengers[p] ? " checked" : "";
+      return '<label><input type="checkbox" data-action="toggle-passenger" data-dir="' + dir + '" data-name="' + escapeHtml(p) + '"' + checked + '> ' + escapeHtml(p) + '</label>';
+    }).join("");
+    return '' +
+    '<div class="leg-block">' +
+      '<div class="leg-head">' + icon + '<span class="dir-title">' + title + '</span></div>' +
+      '<div class="leg-fields">' +
+        '<div class="cost-field"><label class="field">Coste (€)</label><input type="number" min="0" step="0.10" inputmode="decimal" placeholder="0,00" data-action="set-cost" data-dir="' + dir + '" value="' + escapeHtml(d.cost) + '"></div>' +
+        '<div class="full"><label class="field">Pasajeros</label>' + (passengerBoxes ? '<div class="pass-list">' + passengerBoxes + '</div>' : '<p class="empty-note">Elige antes quién conduce.</p>') + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderTripFormSection(){
+    if (!canAddTrip()){
+      if (state.people.length === 0) return "";
+      return '<section class="block"><h2>Añadir trayecto</h2><p class="empty-note">Elige quién eres arriba (como conductor/a o administrador/a) para poder añadir trayectos.</p></section>';
+    }
+    if (state.people.length === 0){
+      return '<section class="block"><h2>Añadir trayecto</h2><p class="empty-note">Añade primero a las personas del grupo.</p></section>';
+    }
+    var driverOptions = sortedPeople().map(function(p){
+      return '<option value="' + escapeHtml(p) + '"' + (draft.driver === p ? " selected" : "") + '>' + escapeHtml(p) + '</option>';
+    }).join("");
+    return '' +
+    '<section class="block"><h2>Añadir trayecto</h2>' +
+      '<div class="ticket-form">' +
+        '<div class="date-row">' +
+          '<div class="field-wrap"><label class="field">Día</label><input type="date" id="trip-date" value="' + escapeHtml(draft.date) + '"></div>' +
+          '<div class="field-wrap"><label class="field">Conductor/a</label><select id="trip-driver" data-action="set-trip-driver"><option value="">Elegir…</option>' + driverOptions + '</select></div>' +
+        '</div>' +
+        renderLegBlock("ida") +
+        renderLegBlock("vuelta") +
+        '<div class="form-actions"><button type="button" class="btn btn-primary" data-action="submit-trip">Guardar trayecto</button></div>' +
+      '</div>' +
+    '</section>';
+  }
+
+  function renderTripCard(trip){
+    var legsHtml = ["ida","vuelta"].map(function(dir){
+      var leg = trip.legs && trip.legs[dir];
+      if (!leg) return "";
+      var icon = dir === "ida" ? iconIda() : iconVuelta();
+      var sortedPass = (leg.passengers || []).slice().sort(function(a,b){ return a.localeCompare(b, "es"); });
+      var passText = sortedPass.length ? "con " + sortedPass.map(escapeHtml).join(", ") : "sin pasajeros";
+      return '<div class="leg-row">' + icon +
+        '<div class="leg-text"><div class="leg-dir-label">' + (dir === "ida" ? "Ida" : "Vuelta") + '</div><div class="leg-pass">' + passText + '</div></div>' +
+        '<div class="leg-cost">' + formatCurrency(Number(leg.cost) || 0) + '</div>' +
+      '</div>';
+    }).join("");
+    return '<div class="trip-card">' +
+      '<div class="trip-head"><span class="trip-date">' + formatDateLong(trip.date) + '</span>' +
+        '<span class="trip-driver">Conduce ' + escapeHtml(trip.driver || "?") + '</span>' +
+        (canDeleteTrip() ? '<span class="trip-del"><button type="button" data-action="delete-trip" data-id="' + trip.id + '" aria-label="Eliminar trayecto">Eliminar</button></span>' : "") +
+      '</div>' +
+      legsHtml +
+    '</div>';
+  }
+
+  function renderPaymentCard(p){
+    return '<div class="trip-card payment-card">' +
+      '<div class="trip-head"><span class="trip-date">' + formatDateLong(p.date) + '</span>' +
+        '<span class="trip-driver">Pago registrado</span>' +
+        (canManageGroup() ? '<span class="trip-del"><button type="button" data-action="delete-payment" data-id="' + p.id + '" aria-label="Eliminar pago">Eliminar</button></span>' : "") +
+      '</div>' +
+      '<div class="leg-row">' + iconCheck() +
+        '<div class="leg-text"><div class="leg-dir-label">Pago</div><div class="leg-pass">' + escapeHtml(p.from) + ' &rarr; ' + escapeHtml(p.to) + '</div></div>' +
+        '<div class="leg-cost">' + formatCurrency(Number(p.amount) || 0) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderHistory(){
+    var items = state.trips.map(function(t){ return { type: "trip", date: t.date, data: t }; })
+      .concat((state.payments || []).map(function(p){ return { type: "payment", date: p.date, data: p }; }));
+    if (items.length === 0){
+      return '<section class="block"><h2>Historial</h2><p class="empty-note">Todavía no se ha registrado ningún trayecto.</p></section>';
+    }
+    items.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+    var cards = items.map(function(item){
+      return item.type === "trip" ? renderTripCard(item.data) : renderPaymentCard(item.data);
+    }).join("");
+    return '<section class="block"><h2>Historial <span class="count">' + state.trips.length + '</span></h2><div class="history-list">' + cards + '</div></section>';
+  }
+
+  function attachEvents(){
+    var app = document.getElementById("app");
+
+    app.querySelectorAll('[data-action="retry-load"]').forEach(function(el){
+      el.addEventListener("click", function(){ loaded = false; render(); initialLoad(); });
+    });
+
+    var npInput = document.getElementById("new-person-input");
+    if (npInput){
+      npInput.addEventListener("input", function(e){ draft.newPersonName = e.target.value; });
+      npInput.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); addPerson(); } });
+    }
+    var dateInput = document.getElementById("trip-date");
+    if (dateInput){
+      dateInput.addEventListener("input", function(e){ draft.date = e.target.value; });
+    }
+
+    app.querySelectorAll('input[data-action="set-cost"]').forEach(function(el){
+      el.addEventListener("input", function(e){ draft[e.target.getAttribute("data-dir")].cost = e.target.value; });
+    });
+
+    var driverSelect = document.getElementById("trip-driver");
+    if (driverSelect){
+      driverSelect.addEventListener("change", function(e){
+        draft.driver = e.target.value;
+        ["ida","vuelta"].forEach(function(dir){ delete draft[dir].passengers[e.target.value]; });
+        render();
+      });
+    }
+
+    app.querySelectorAll('input[data-action="toggle-passenger"]').forEach(function(el){
+      el.addEventListener("change", function(e){
+        var dir = e.target.getAttribute("data-dir");
+        var name = e.target.getAttribute("data-name");
+        draft[dir].passengers[name] = e.target.checked;
+      });
+    });
+
+    app.querySelectorAll('[data-action="add-person"]').forEach(function(el){ el.addEventListener("click", addPerson); });
+    app.querySelectorAll('[data-action="remove-person"]').forEach(function(el){
+      el.addEventListener("click", function(e){ removePerson(e.currentTarget.getAttribute("data-name")); });
+    });
+    app.querySelectorAll('[data-action="submit-trip"]').forEach(function(el){ el.addEventListener("click", submitTrip); });
+    app.querySelectorAll('[data-action="delete-trip"]').forEach(function(el){
+      el.addEventListener("click", function(e){ deleteTrip(e.currentTarget.getAttribute("data-id")); });
+    });
+
+    var whoamiSelect = document.getElementById("whoami-select");
+    if (whoamiSelect){
+      whoamiSelect.addEventListener("change", function(e){ setWhoami(e.target.value); });
+    }
+    app.querySelectorAll('select[data-action="set-role"]').forEach(function(el){
+      el.addEventListener("change", function(e){ setRole(e.target.getAttribute("data-name"), e.target.value); });
+    });
+    app.querySelectorAll('[data-action="settle-row"]').forEach(function(el){
+      el.addEventListener("click", function(e){
+        var t = e.currentTarget;
+        settleRow({ from: t.getAttribute("data-from"), to: t.getAttribute("data-to"), amount: parseFloat(t.getAttribute("data-amount")) });
+      });
+    });
+    app.querySelectorAll('[data-action="delete-payment"]').forEach(function(el){
+      el.addEventListener("click", function(e){ deletePayment(e.currentTarget.getAttribute("data-id")); });
+    });
+  }
+
+  function render(){
+    var app = document.getElementById("app");
+    if (!loaded){
+      app.innerHTML = renderHeader() + '<main class="wrap"><p class="empty-note" style="margin-top:24px;">Cargando datos compartidos…</p></main>';
+      return;
+    }
+    if (!connOk){
+      app.innerHTML = renderHeader() +
+        '<main class="wrap"><div class="banner-ro">No se ha podido conectar con la base de datos compartida. Revisa tu conexión.' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="retry-load">Reintentar</button></div></main>';
+      attachEvents();
+      return;
+    }
+    if (whoami && state.people.indexOf(whoami) === -1){
+      whoami = "";
+      try { localStorage.removeItem(WHOAMI_KEY); } catch(e){}
+    }
+    app.innerHTML =
+      renderHeader() +
+      '<main class="wrap">' +
+        renderWhoami() +
+        renderBalances() +
+        renderSettlements() +
+        renderPeople() +
+        renderTripFormSection() +
+        renderHistory() +
+      '</main>';
+    attachEvents();
+  }
+
+  function poll(){
+    fetchState().then(function(remote){
+      if (saving) return;
+      if (JSON.stringify(remote) !== JSON.stringify(state)){
+        state = remote;
+        render();
+      }
+    }).catch(function(){ /* transient network hiccup, ignore */ });
+  }
+
+  function initialLoad(){
+    fetchState().then(function(s){
+      state = s;
+      loaded = true;
+      connOk = true;
+      render();
+      setInterval(poll, POLL_MS);
+    }).catch(function(){
+      loaded = true;
+      connOk = false;
+      render();
+    });
+  }
+
+  render();
+  initialLoad();
+})();
+</script>
+</body>
+</html>
