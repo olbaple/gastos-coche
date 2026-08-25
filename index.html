@@ -127,6 +127,7 @@
     text-wrap:balance;
   }
   .sub{color:var(--ink-soft); margin:0; max-width:52ch; font-size:15px;}
+  .version-tag{margin-top:10px; font-family:var(--font-mono); font-size:10.5px; color:var(--ink-faint); letter-spacing:0.03em;}
   h2{
     font-family:var(--font-display); font-weight:700;
     font-size:17px; letter-spacing:0.01em;
@@ -298,6 +299,7 @@
 (function(){
   "use strict";
 
+  var APP_VERSION = "v1";
   var DB_URL = "https://gastos-coche-39329-default-rtdb.europe-west1.firebasedatabase.app";
   var STATE_URL = DB_URL + "/state.json";
   var POLL_MS = 4000;
@@ -723,6 +725,7 @@
       '<span class="eyebrow">' + iconRoute() + ' Ruta compartida</span>' +
       '<h1>Ruta y Cuenta</h1>' +
       '<p class="sub">Apuntad quién lleva el coche cada día y quién paga qué, y aquí queda el balance de todo el grupo.</p>' +
+      '<div class="version-tag">Ruta y Cuenta · ' + APP_VERSION + '</div>' +
     '</div></header>';
   }
 

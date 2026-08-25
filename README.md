@@ -40,6 +40,12 @@ compañeros de confianza; no lo uses para nada más sensible.
 
 ## Cómo está montado (para quien lo mantenga)
 
+- **Número de versión:** debajo del subtítulo, en pequeño, la web muestra
+  "Ruta y Cuenta · vN" (variable `APP_VERSION` en el código). Se sube un
+  número cada vez que se entrega una actualización de `index.html`, para
+  poder comprobar de un vistazo si ya está desplegada la última versión sin
+  tener que mirar el código.
+
 - **`index.html`** es toda la web: una sola página con el HTML, el CSS y el
   JavaScript juntos. No hay build ni dependencias — se edita y se sube tal
   cual.
