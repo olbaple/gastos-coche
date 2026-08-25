@@ -93,8 +93,22 @@
     padding:36px 20px 28px;
     border-bottom:1px solid var(--line);
     background:var(--surface);
+    position:relative;
   }
-  .top-inner{max-width:840px; margin:0 auto;}
+  .top-inner{max-width:840px; margin:0 auto; position:relative;}
+  .theme-toggle{
+    position:absolute; top:0; right:20px;
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface-2); border:1px solid var(--line-strong);
+    border-radius:999px; padding:6px 12px 6px 10px;
+    font-family:var(--font-body); font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .theme-toggle:hover{background:var(--accent-soft); color:var(--accent-strong);}
+  .theme-toggle svg{width:15px; height:15px; flex:none;}
+  @media (max-width:480px){
+    .theme-toggle{position:static; margin-bottom:14px;}
+  }
   .eyebrow{
     display:inline-flex; align-items:center; gap:7px;
     font-family:var(--font-mono); font-size:11.5px; font-weight:600;
@@ -290,6 +304,18 @@
   var WHOAMI_KEY = "gastos-coche-whoami-v1";
   var ROLES = ["admin", "conductor", "usuario"];
 
+  var API_KEY = "AIzaSyCgkyzS1N1trDfyGwFdoxYnG0irQ2T4YWw";
+  var LOGIN_EMAIL = "equipo@rutaycuenta.app";
+  var REFRESH_KEY = "gastos-coche-refresh-token";
+  var TOKEN_REFRESH_MS = 50 * 60 * 1000;
+
+  var idToken = null;
+  var refreshToken = null;
+  try { refreshToken = localStorage.getItem(REFRESH_KEY) || null; } catch(e){ refreshToken = null; }
+  var authed = false;
+  var loginBusy = false;
+  var loginError = "";
+
   var state = { people: [], trips: [], lastCost: {}, roles: {}, payments: [] };
   var loaded = false;
   var connOk = false;
@@ -297,6 +323,81 @@
 
   var whoami = "";
   try { whoami = localStorage.getItem(WHOAMI_KEY) || ""; } catch(e){ whoami = ""; }
+
+  var THEME_KEY = "gastos-coche-theme";
+  var theme = "";
+  try { theme = localStorage.getItem(THEME_KEY) || ""; } catch(e){ theme = ""; }
+  function applyTheme(){
+    if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  applyTheme();
+  function cycleTheme(){
+    theme = theme === "" ? "light" : (theme === "light" ? "dark" : "");
+    try { localStorage.setItem(THEME_KEY, theme); } catch(e){}
+    applyTheme();
+    render();
+  }
+  function themeLabel(){
+    return theme === "light" ? "Claro" : (theme === "dark" ? "Oscuro" : "Auto");
+  }
+
+  function signIn(password){
+    return fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + API_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: LOGIN_EMAIL, password: password, returnSecureToken: true })
+    }).then(function(r){
+      return r.json().then(function(data){
+        if (!r.ok) throw (data.error || { message: "login_failed" });
+        return data;
+      });
+    }).then(function(data){
+      idToken = data.idToken;
+      refreshToken = data.refreshToken;
+      try { localStorage.setItem(REFRESH_KEY, refreshToken); } catch(e){}
+    });
+  }
+
+  function refreshIdToken(){
+    if (!refreshToken) return Promise.reject(new Error("no_refresh_token"));
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + API_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(refreshToken)
+    }).then(function(r){
+      return r.json().then(function(data){
+        if (!r.ok) throw (data.error || { message: "refresh_failed" });
+        return data;
+      });
+    }).then(function(data){
+      idToken = data.id_token;
+      refreshToken = data.refresh_token;
+      try { localStorage.setItem(REFRESH_KEY, refreshToken); } catch(e){}
+    });
+  }
+
+  function forceRelogin(){
+    authed = false;
+    idToken = null;
+    refreshToken = null;
+    try { localStorage.removeItem(REFRESH_KEY); } catch(e){}
+    render();
+  }
+
+  function signOut(){
+    forceRelogin();
+  }
+
+  function authedFetch(url, opts, retried){
+    var full = url + (url.indexOf("?") === -1 ? "?" : "&") + "auth=" + encodeURIComponent(idToken || "");
+    return fetch(full, opts).then(function(r){
+      if (r.status === 401 && !retried){
+        return refreshIdToken().then(function(){ return authedFetch(url, opts, true); });
+      }
+      return r;
+    });
+  }
 
   function todayISO(){
     var d = new Date();
@@ -316,18 +417,22 @@
   }
 
   function fetchState(){
-    return fetch(STATE_URL, { cache: "no-store" }).then(function(r){
+    return authedFetch(STATE_URL, { cache: "no-store" }).then(function(r){
+      if (r.status === 401){ forceRelogin(); throw new Error("unauthorized"); }
       if (!r.ok) throw new Error("http " + r.status);
       return r.json();
     }).then(normalizeState);
   }
 
   function pushState(newState){
-    return fetch(STATE_URL, {
+    return authedFetch(STATE_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newState)
-    }).then(function(r){ if (!r.ok) throw new Error("http " + r.status); });
+    }).then(function(r){
+      if (r.status === 401){ forceRelogin(); throw new Error("unauthorized"); }
+      if (!r.ok) throw new Error("http " + r.status);
+    });
   }
 
   function legDefaults(dir, lastCostObj){
@@ -379,6 +484,15 @@
   }
   function iconCheck(){
     return '<svg class="dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  }
+  function iconTheme(){
+    if (theme === "light"){
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path></svg>';
+    }
+    if (theme === "dark"){
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"></path></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>';
   }
 
   function hasAdmin(){
@@ -605,6 +719,7 @@
   function renderHeader(){
     return '' +
     '<header class="top"><div class="top-inner">' +
+      '<button type="button" class="theme-toggle" data-action="cycle-theme" aria-label="Cambiar tema (' + themeLabel() + ')" title="Tema: ' + themeLabel() + '">' + iconTheme() + '<span>' + themeLabel() + '</span></button>' +
       '<span class="eyebrow">' + iconRoute() + ' Ruta compartida</span>' +
       '<h1>Ruta y Cuenta</h1>' +
       '<p class="sub">Apuntad quién lleva el coche cada día y quién paga qué, y aquí queda el balance de todo el grupo.</p>' +
@@ -787,6 +902,15 @@
   function attachEvents(){
     var app = document.getElementById("app");
 
+    document.querySelectorAll('[data-action="cycle-theme"]').forEach(function(el){
+      el.addEventListener("click", cycleTheme);
+    });
+
+    var loginBtn = document.querySelector('[data-action="login-submit"]');
+    if (loginBtn) loginBtn.addEventListener("click", doLogin);
+    var loginPw = document.getElementById("login-password");
+    if (loginPw) loginPw.addEventListener("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); doLogin(); } });
+
     app.querySelectorAll('[data-action="retry-load"]').forEach(function(el){
       el.addEventListener("click", function(){ loaded = false; render(); initialLoad(); });
     });
@@ -849,10 +973,49 @@
     });
   }
 
+  function renderLoginScreen(){
+    return '<main class="wrap"><div class="ticket-form" style="max-width:340px; margin:28px auto 0;">' +
+      '<h2 style="margin-bottom:14px;">Acceso del grupo</h2>' +
+      '<label class="field">Contraseña</label>' +
+      '<input type="password" id="login-password" placeholder="Contraseña compartida"' + (loginBusy ? " disabled" : "") + '>' +
+      (loginError ? '<p class="empty-note" style="color:var(--debt);">' + escapeHtml(loginError) + '</p>' : "") +
+      '<div class="form-actions"><button type="button" class="btn btn-primary" data-action="login-submit"' + (loginBusy ? " disabled" : "") + '>' + (loginBusy ? "Entrando…" : "Entrar") + '</button></div>' +
+    '</div></main>';
+  }
+
+  function doLogin(){
+    var pwEl = document.getElementById("login-password");
+    var pw = pwEl ? pwEl.value : "";
+    if (!pw || loginBusy) return;
+    loginBusy = true;
+    loginError = "";
+    render();
+    signIn(pw).then(function(){
+      loginBusy = false;
+      authed = true;
+      render();
+      initialLoad();
+    }).catch(function(){
+      loginBusy = false;
+      loginError = "Contraseña incorrecta.";
+      render();
+      var el = document.getElementById("login-password");
+      if (el) el.focus();
+    });
+  }
+
   function render(){
     var app = document.getElementById("app");
+    if (!authed){
+      app.innerHTML = renderHeader() + renderLoginScreen();
+      attachEvents();
+      var pwField = document.getElementById("login-password");
+      if (pwField) pwField.focus();
+      return;
+    }
     if (!loaded){
       app.innerHTML = renderHeader() + '<main class="wrap"><p class="empty-note" style="margin-top:24px;">Cargando datos compartidos…</p></main>';
+      attachEvents();
       return;
     }
     if (!connOk){
@@ -903,8 +1066,30 @@
     });
   }
 
+  function boot(){
+    if (refreshToken){
+      refreshIdToken().then(function(){
+        authed = true;
+        render();
+        initialLoad();
+      }).catch(function(){
+        refreshToken = null;
+        try { localStorage.removeItem(REFRESH_KEY); } catch(e){}
+        authed = false;
+        render();
+      });
+    } else {
+      authed = false;
+      render();
+    }
+  }
+
+  setInterval(function(){
+    if (authed && refreshToken) refreshIdToken().catch(function(){});
+  }, TOKEN_REFRESH_MS);
+
   render();
-  initialLoad();
+  boot();
 })();
 </script>
 </body>
