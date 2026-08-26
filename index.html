@@ -299,7 +299,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "v1";
+  var APP_VERSION = "v2";
   var DB_URL = "https://gastos-coche-39329-default-rtdb.europe-west1.firebasedatabase.app";
   var STATE_URL = DB_URL + "/state.json";
   var POLL_MS = 4000;
@@ -325,6 +325,23 @@
 
   var whoami = "";
   try { whoami = localStorage.getItem(WHOAMI_KEY) || ""; } catch(e){ whoami = ""; }
+
+  var ADMIN_PASSWORD = "udiatcd";
+  var ADMIN_UNLOCK_KEY = "gastos-coche-admin-unlock-v1";
+  var adminUnlocked = false;
+  try { adminUnlocked = localStorage.getItem(ADMIN_UNLOCK_KEY) === "1"; } catch(e){ adminUnlocked = false; }
+  var adminUnlockError = "";
+
+  function unlockAdmin(pw){
+    if (pw === ADMIN_PASSWORD){
+      adminUnlocked = true;
+      try { localStorage.setItem(ADMIN_UNLOCK_KEY, "1"); } catch(e){}
+      adminUnlockError = "";
+    } else {
+      adminUnlockError = "Contraseña de administrador incorrecta.";
+    }
+    render();
+  }
 
   var THEME_KEY = "gastos-coche-theme";
   var theme = "";
@@ -507,7 +524,10 @@
     return r === "admin" ? "Administrador/a" : (r === "usuario" ? "Solo lectura" : "Conductor/a");
   }
   function myRole(){
-    return whoami ? roleOf(whoami) : "usuario";
+    if (!whoami) return "usuario";
+    var r = roleOf(whoami);
+    if (r === "admin" && !adminUnlocked) return "conductor";
+    return r;
   }
   function canManageGroup(){
     return myRole() === "admin" || !hasAdmin();
@@ -520,7 +540,7 @@
   }
   function canSettleRow(row){
     if (myRole() === "admin") return true;
-    return myRole() === "conductor" && !!whoami && (row.from === whoami || row.to === whoami);
+    return myRole() === "conductor" && !!whoami && row.to === whoami;
   }
 
   function setWhoami(name){
@@ -742,6 +762,16 @@
     return '<div class="whoami-bar"><span>' + label + '</span>' +
         '<select id="whoami-select" data-action="set-whoami"><option value="">— Elegir quién eres —</option>' + options + '</select>' +
       '</div>' + hint;
+  }
+
+  function renderAdminUnlock(){
+    if (!whoami || roleOf(whoami) !== "admin" || adminUnlocked) return "";
+    return '<div class="whoami-bar">' +
+        '<span>Eres administrador/a de este grupo — introduce la contraseña de administrador para desbloquear tus permisos en este dispositivo.</span>' +
+        '<input type="password" id="admin-unlock-input" placeholder="Contraseña de admin" style="max-width:170px;">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-action="unlock-admin">Desbloquear</button>' +
+      '</div>' +
+      (adminUnlockError ? '<div class="whoami-hint" style="color:var(--debt);">' + escapeHtml(adminUnlockError) + '</div>' : "");
   }
 
   function renderBalances(){
@@ -976,6 +1006,19 @@
     if (whoamiSelect){
       whoamiSelect.addEventListener("change", function(e){ setWhoami(e.target.value); });
     }
+    var unlockBtn = document.querySelector('[data-action="unlock-admin"]');
+    if (unlockBtn){
+      unlockBtn.addEventListener("click", function(){
+        var el = document.getElementById("admin-unlock-input");
+        unlockAdmin(el ? el.value : "");
+      });
+    }
+    var unlockInput = document.getElementById("admin-unlock-input");
+    if (unlockInput){
+      unlockInput.addEventListener("keydown", function(e){
+        if (e.key === "Enter"){ e.preventDefault(); unlockAdmin(e.target.value); }
+      });
+    }
     app.querySelectorAll('select[data-action="set-role"]').forEach(function(el){
       el.addEventListener("change", function(e){ setRole(e.target.getAttribute("data-name"), e.target.value); });
     });
@@ -1050,6 +1093,7 @@
       renderHeader() +
       '<main class="wrap">' +
         renderWhoami() +
+        renderAdminUnlock() +
         renderBalances() +
         renderSettlements() +
         renderPeople() +
