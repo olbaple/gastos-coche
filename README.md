@@ -20,10 +20,12 @@ de retraso, no es al instante).
      Para ejercer estos permisos, además de tener el rol asignado, hace
      falta introducir una segunda contraseña (solo la conoce el admin) que
      desbloquea el modo administrador en ese dispositivo.
-   - **Conductor/a**: añade trayectos nuevos y puede marcar como pagada una
-     deuda solo cuando es a él/ella a quien le deben ese dinero (no puede
-     marcar como pagado lo que él mismo debe — eso lo confirma quien cobra).
-     Solo ve su propio balance, sus propias cuentas y su propio historial.
+   - **Conductor/a**: añade trayectos nuevos, puede borrar los trayectos en
+     los que él/ella fue quien condujo (no los de otros), y puede marcar
+     como pagada una deuda solo cuando es a él/ella a quien le deben ese
+     dinero (no puede marcar como pagado lo que él mismo debe — eso lo
+     confirma quien cobra). Solo ve su propio balance, sus propias cuentas y
+     su propio historial.
    - **Solo lectura**: solo consulta lo suyo (balance, cuentas, historial),
      no puede añadir ni tocar nada.
    - Mientras no haya ningún administrador/a asignado todavía (nadie tiene
@@ -39,6 +41,8 @@ de retraso, no es al instante).
    ambos, no dos pagos cruzados.
 6. Al pagar de verdad (Bizum, efectivo...), quien puede saldar esa fila pulsa
    "Marcar pagado" — queda anotado en el historial y se descuenta del balance.
+7. El historial se pagina de 10 en 10, con números de página abajo (como en
+   cualquier buscador), no todo junto.
 
 **Importante:** esto es una barrera de confianza, no una separación de
 cuentas real. Cualquiera con la contraseña compartida puede, en teoría,

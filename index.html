@@ -287,6 +287,12 @@
   .leg-pass{color:var(--ink-soft); font-size:12.5px; margin-top:2px;}
   .leg-cost{font-family:var(--font-mono); font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; white-space:nowrap;}
   .payment-card{border-left:3px solid var(--amber);}
+  .pager{display:flex; justify-content:center; align-items:center; gap:6px; flex-wrap:wrap; margin-top:14px;}
+  .pager-btn{padding:6px 11px; min-width:34px;}
+  .pager-btn:disabled{opacity:0.4; cursor:not-allowed;}
+  .pager-active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .pager-active:hover{background:var(--accent-strong);}
+  .pager-ellipsis{color:var(--ink-faint); padding:0 2px;}
 
   @media (max-width:520px){
     .balances{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));}
@@ -299,7 +305,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "v2";
+  var APP_VERSION = "v4";
   var DB_URL = "https://gastos-coche-39329-default-rtdb.europe-west1.firebasedatabase.app";
   var STATE_URL = DB_URL + "/state.json";
   var POLL_MS = 4000;
@@ -325,6 +331,9 @@
 
   var whoami = "";
   try { whoami = localStorage.getItem(WHOAMI_KEY) || ""; } catch(e){ whoami = ""; }
+
+  var HISTORY_PAGE_SIZE = 10;
+  var historyPage = 1;
 
   var ADMIN_PASSWORD = "udiatcd";
   var ADMIN_UNLOCK_KEY = "gastos-coche-admin-unlock-v1";
@@ -535,8 +544,9 @@
   function canAddTrip(){
     return myRole() === "admin" || myRole() === "conductor";
   }
-  function canDeleteTrip(){
-    return myRole() === "admin";
+  function canDeleteTrip(trip){
+    if (myRole() === "admin") return true;
+    return myRole() === "conductor" && !!whoami && trip && trip.driver === whoami;
   }
   function canSettleRow(row){
     if (myRole() === "admin") return true;
@@ -545,6 +555,7 @@
 
   function setWhoami(name){
     whoami = name || "";
+    historyPage = 1;
     try {
       if (whoami) localStorage.setItem(WHOAMI_KEY, whoami);
       else localStorage.removeItem(WHOAMI_KEY);
@@ -704,7 +715,8 @@
   }
 
   function deleteTrip(id){
-    if (!canDeleteTrip()) return;
+    var trip = state.trips.filter(function(t){ return t.id === id; })[0];
+    if (!trip || !canDeleteTrip(trip)) return;
     if (!confirm("¿Eliminar este trayecto del historial?")) return;
     var next = Object.assign({}, state, { trips: state.trips.filter(function(t){ return t.id !== id; }) });
     saveState(next);
@@ -900,7 +912,7 @@
     return '<div class="trip-card">' +
       '<div class="trip-head"><span class="trip-date">' + formatDateLong(trip.date) + '</span>' +
         '<span class="trip-driver">Conduce ' + escapeHtml(trip.driver || "?") + '</span>' +
-        (canDeleteTrip() ? '<span class="trip-del"><button type="button" data-action="delete-trip" data-id="' + trip.id + '" aria-label="Eliminar trayecto">Eliminar</button></span>' : "") +
+        (canDeleteTrip(trip) ? '<span class="trip-del"><button type="button" data-action="delete-trip" data-id="' + trip.id + '" aria-label="Eliminar trayecto">Eliminar</button></span>' : "") +
       '</div>' +
       legsHtml +
     '</div>';
@@ -940,10 +952,37 @@
       return '<section class="block"><h2>Historial</h2><p class="empty-note">' + emptyMsg + '</p></section>';
     }
     items.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
-    var cards = items.map(function(item){
+    var totalPages = Math.max(1, Math.ceil(items.length / HISTORY_PAGE_SIZE));
+    if (historyPage > totalPages) historyPage = totalPages;
+    if (historyPage < 1) historyPage = 1;
+    var start = (historyPage - 1) * HISTORY_PAGE_SIZE;
+    var visible = items.slice(start, start + HISTORY_PAGE_SIZE);
+    var cards = visible.map(function(item){
       return item.type === "trip" ? renderTripCard(item.data) : renderPaymentCard(item.data);
     }).join("");
-    return '<section class="block"><h2>Historial <span class="count">' + trips.length + '</span></h2><div class="history-list">' + cards + '</div></section>';
+    var pager = totalPages > 1 ? renderPager(historyPage, totalPages) : "";
+    return '<section class="block"><h2>Historial <span class="count">' + trips.length + '</span></h2><div class="history-list">' + cards + '</div>' + pager + '</section>';
+  }
+
+  function renderPager(current, total){
+    function pageBtn(p){
+      var active = p === current;
+      return '<button type="button" class="btn btn-ghost btn-sm pager-btn' + (active ? " pager-active" : "") + '" data-action="goto-history-page" data-page="' + p + '"' + (active ? ' aria-current="page"' : '') + '>' + p + '</button>';
+    }
+    var list = [1, total];
+    for (var p = current - 1; p <= current + 1; p++) list.push(p);
+    list = list.filter(function(p){ return p >= 1 && p <= total; });
+    list = list.filter(function(p, idx){ return list.indexOf(p) === idx; }).sort(function(a,b){ return a - b; });
+    var parts = [];
+    parts.push('<button type="button" class="btn btn-ghost btn-sm pager-btn" data-action="goto-history-page" data-page="' + Math.max(1, current - 1) + '"' + (current === 1 ? " disabled" : "") + ' aria-label="Página anterior">‹</button>');
+    var prev = 0;
+    list.forEach(function(p){
+      if (prev && p - prev > 1) parts.push('<span class="pager-ellipsis">…</span>');
+      parts.push(pageBtn(p));
+      prev = p;
+    });
+    parts.push('<button type="button" class="btn btn-ghost btn-sm pager-btn" data-action="goto-history-page" data-page="' + Math.min(total, current + 1) + '"' + (current === total ? " disabled" : "") + ' aria-label="Página siguiente">›</button>');
+    return '<div class="pager">' + parts.join("") + '</div>';
   }
 
   function attachEvents(){
@@ -1030,6 +1069,12 @@
     });
     app.querySelectorAll('[data-action="delete-payment"]').forEach(function(el){
       el.addEventListener("click", function(e){ deletePayment(e.currentTarget.getAttribute("data-id")); });
+    });
+    app.querySelectorAll('[data-action="goto-history-page"]').forEach(function(el){
+      el.addEventListener("click", function(e){
+        var p = parseInt(e.currentTarget.getAttribute("data-page"), 10);
+        if (!isNaN(p)){ historyPage = p; render(); }
+      });
     });
   }
 
