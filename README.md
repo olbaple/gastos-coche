@@ -16,14 +16,21 @@ de retraso, no es al instante).
 3. Según tu rol, ves y puedes hacer cosas distintas:
    - **Administrador/a**: ve el balance y las cuentas de todo el grupo,
      gestiona quién está en el grupo y qué rol tiene cada uno, puede borrar
-     cualquier trayecto o pago.
-   - **Conductor/a**: añade trayectos nuevos y puede marcar como pagadas sus
-     propias deudas. Solo ve su propio balance, sus propias cuentas y su
-     propio historial.
+     cualquier trayecto o pago, y puede marcar como pagada cualquier fila.
+     Para ejercer estos permisos, además de tener el rol asignado, hace
+     falta introducir una segunda contraseña (solo la conoce el admin) que
+     desbloquea el modo administrador en ese dispositivo.
+   - **Conductor/a**: añade trayectos nuevos y puede marcar como pagada una
+     deuda solo cuando es a él/ella a quien le deben ese dinero (no puede
+     marcar como pagado lo que él mismo debe — eso lo confirma quien cobra).
+     Solo ve su propio balance, sus propias cuentas y su propio historial.
    - **Solo lectura**: solo consulta lo suyo (balance, cuentas, historial),
      no puede añadir ni tocar nada.
-   - Mientras no haya ningún administrador/a asignado, cualquiera puede
-     gestionar personas y roles (para poder arrancar el grupo).
+   - Mientras no haya ningún administrador/a asignado todavía (nadie tiene
+     ese rol en "Personas"), cualquiera puede gestionar personas y roles,
+     para poder arrancar el grupo la primera vez. En cuanto alguien tiene el
+     rol de administrador/a, hace falta la contraseña de admin para poder
+     gestionar nada, aunque esa persona todavía no la haya introducido.
 4. Un trayecto = un conductor/a para ida y vuelta ese día, con un coste y una
    lista de pasajeros por tramo (pueden cambiar entre ida y vuelta, por si
    alguien se queda a medio camino).
@@ -86,6 +93,18 @@ compañeros de confianza; no lo uses para nada más sensible.
 
 Firebase → Authentication → pestaña "Users" → los tres puntos junto al
 usuario → cambiar contraseña. No hace falta tocar el código.
+
+### Contraseña de administrador
+
+Es una segunda clave, distinta de la contraseña compartida de arriba, que
+desbloquea el rol de administrador/a en el dispositivo desde el que se
+introduce (se guarda en ese navegador, no hay que repetirlo cada vez). Vive
+en el propio código (`ADMIN_PASSWORD`), no en Firebase — es una barrera de
+confianza, no una comprobación real del servidor: cualquiera con acceso al
+código fuente de la página podría leerla. Para cambiarla, hay que editar esa
+constante en `index.html` y volver a subir el archivo.
+
+
 
 ### Añadir a alguien nuevo al grupo
 
