@@ -180,6 +180,10 @@
   .balance-amt.pos{color:var(--credit);}
   .balance-amt.neg{color:var(--debt);}
   .balance-label{font-size:11.5px; color:var(--ink-faint); margin-top:3px;}
+  .balance-split{display:flex; flex-direction:column; gap:5px;}
+  .balance-line{display:flex; align-items:baseline; gap:6px;}
+  .balance-line .balance-amt{font-size:15px;}
+  .balance-line .balance-label{margin-top:0;}
   .empty-note{color:var(--ink-faint); font-size:13.5px; padding:6px 0;}
 
   /* settlements */
@@ -305,7 +309,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "v4";
+  var APP_VERSION = "v7";
   var DB_URL = "https://gastos-coche-39329-default-rtdb.europe-west1.firebasedatabase.app";
   var STATE_URL = DB_URL + "/state.json";
   var POLL_MS = 4000;
@@ -513,6 +517,9 @@
   function iconCheck(){
     return '<svg class="dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
   }
+  function iconEdit(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:block;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+  }
   function iconTheme(){
     if (theme === "light"){
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path></svg>';
@@ -563,9 +570,9 @@
     render();
   }
 
-  function computeBalances(st){
-    var balances = {};
-    st.people.forEach(function(p){ balances[p] = 0; });
+  function computeBalanceParts(st){
+    var receivable = {}, payable = {};
+    st.people.forEach(function(p){ receivable[p] = 0; payable[p] = 0; });
     st.trips.forEach(function(trip){
       var driver = trip.driver;
       if (!driver) return;
@@ -575,23 +582,23 @@
         var set = {};
         var participants = [];
         [driver].concat(leg.passengers || []).forEach(function(p){
-          if (p && !set[p] && (p in balances)){ set[p] = true; participants.push(p); }
+          if (p && !set[p] && (p in receivable)){ set[p] = true; participants.push(p); }
         });
         if (participants.length === 0) return;
         var cost = Number(leg.cost) || 0;
         var share = cost / participants.length;
         participants.forEach(function(p){
-          if (p === driver) balances[p] += (cost - share);
-          else balances[p] -= share;
+          if (p === driver) receivable[p] += (cost - share);
+          else payable[p] += share;
         });
       });
     });
     (st.payments || []).forEach(function(pmt){
       var amt = Number(pmt.amount) || 0;
-      if (pmt.from in balances) balances[pmt.from] += amt;
-      if (pmt.to in balances) balances[pmt.to] -= amt;
+      if (pmt.from in payable) payable[pmt.from] -= amt;
+      if (pmt.to in receivable) receivable[pmt.to] -= amt;
     });
-    return balances;
+    return { receivable: receivable, payable: payable };
   }
 
   function computePairwiseLedger(st){
@@ -694,6 +701,34 @@
     saveState(next);
   }
 
+  function renamePerson(oldName, newName){
+    if (!canManageGroup()) return;
+    newName = (newName || "").trim();
+    if (!newName || newName === oldName) return;
+    if (state.people.indexOf(newName) !== -1){ toast("Ya hay alguien con ese nombre."); return; }
+    var swap = function(n){ return n === oldName ? newName : n; };
+    var people = state.people.map(swap);
+    var roles = Object.assign({}, state.roles);
+    if (oldName in roles){ roles[newName] = roles[oldName]; delete roles[oldName]; }
+    var trips = state.trips.map(function(t){
+      var legs = {};
+      ["ida","vuelta"].forEach(function(dir){
+        var leg = t.legs && t.legs[dir];
+        if (!leg) return;
+        legs[dir] = Object.assign({}, leg, { passengers: (leg.passengers || []).map(swap) });
+      });
+      return Object.assign({}, t, { driver: swap(t.driver), legs: legs });
+    });
+    var payments = (state.payments || []).map(function(p){
+      return Object.assign({}, p, { from: swap(p.from), to: swap(p.to) });
+    });
+    if (whoami === oldName){
+      whoami = newName;
+      try { localStorage.setItem(WHOAMI_KEY, newName); } catch(e){}
+    }
+    saveState(Object.assign({}, state, { people: people, roles: roles, trips: trips, payments: payments }));
+  }
+
   function setRole(name, role){
     if (!canManageGroup()) return;
     if (ROLES.indexOf(role) === -1) return;
@@ -790,19 +825,22 @@
     if (state.people.length === 0){
       return '<section class="block"><h2>Balance</h2><p class="empty-note">Añade personas al grupo para empezar a repartir gastos.</p></section>';
     }
-    var balances = computeBalances(state);
+    var parts = computeBalanceParts(state);
     var visible = canManageGroup() ? sortedPeople() : (whoami ? [whoami] : []);
     if (visible.length === 0){
       return '<section class="block"><h2>Balance</h2><p class="empty-note">Elige quién eres arriba para ver tu balance.</p></section>';
     }
     var cards = visible.map(function(p){
-      var amt = Math.round((balances[p] || 0) * 100) / 100;
-      var cls = amt > 0.005 ? "pos" : (amt < -0.005 ? "neg" : "");
-      var label = amt > 0.005 ? "le deben" : (amt < -0.005 ? "debe" : "en paz");
+      var recv = Math.max(0, Math.round((parts.receivable[p] || 0) * 100) / 100);
+      var pay = Math.max(0, Math.round((parts.payable[p] || 0) * 100) / 100);
+      var net = recv - pay;
+      var cls = net > 0.005 ? "pos" : (net < -0.005 ? "neg" : "");
       return '<div class="balance-card ' + cls + '">' +
         '<div class="balance-name">' + escapeHtml(p) + '</div>' +
-        '<div class="balance-amt ' + cls + '">' + formatCurrency(Math.abs(amt)) + '</div>' +
-        '<div class="balance-label">' + label + '</div>' +
+        '<div class="balance-split">' +
+          '<div class="balance-line"><span class="balance-amt pos">' + formatCurrency(recv) + '</span><span class="balance-label">le deben</span></div>' +
+          '<div class="balance-line"><span class="balance-amt neg">' + formatCurrency(pay) + '</span><span class="balance-label">debe</span></div>' +
+        '</div>' +
       '</div>';
     }).join("");
     return '<section class="block"><h2>Balance</h2><div class="balances">' + cards + '</div></section>';
@@ -838,6 +876,7 @@
         '</select>') :
         ('<span class="role-tag">' + roleLabel(roleOf(p)) + '</span>');
       return '<span class="chip">' + escapeHtml(p) + roleBit +
+        (manage ? ' <button type="button" data-action="rename-person" data-name="' + escapeHtml(p) + '" aria-label="Renombrar ' + escapeHtml(p) + '">' + iconEdit() + '</button>' : '') +
         (manage ? ' <button type="button" data-action="remove-person" data-name="' + escapeHtml(p) + '" aria-label="Quitar ' + escapeHtml(p) + '">&times;</button>' : '') +
       '</span>';
     }).join("");
@@ -1036,6 +1075,13 @@
     app.querySelectorAll('[data-action="remove-person"]').forEach(function(el){
       el.addEventListener("click", function(e){ removePerson(e.currentTarget.getAttribute("data-name")); });
     });
+    app.querySelectorAll('[data-action="rename-person"]').forEach(function(el){
+      el.addEventListener("click", function(e){
+        var oldName = e.currentTarget.getAttribute("data-name");
+        var newName = prompt("Nuevo nombre para " + oldName + ":", oldName);
+        if (newName !== null) renamePerson(oldName, newName);
+      });
+    });
     app.querySelectorAll('[data-action="submit-trip"]').forEach(function(el){ el.addEventListener("click", submitTrip); });
     app.querySelectorAll('[data-action="delete-trip"]').forEach(function(el){
       el.addEventListener("click", function(e){ deleteTrip(e.currentTarget.getAttribute("data-id")); });
@@ -1100,9 +1146,17 @@
       authed = true;
       render();
       initialLoad();
-    }).catch(function(){
+    }).catch(function(err){
       loginBusy = false;
-      loginError = "Contraseña incorrecta.";
+      var code = (err && err.message) || "";
+      var knownAuthErrors = ["INVALID_LOGIN_CREDENTIALS", "INVALID_PASSWORD", "EMAIL_NOT_FOUND", "USER_DISABLED", "MISSING_PASSWORD"];
+      if (knownAuthErrors.indexOf(code) !== -1){
+        loginError = "Contraseña incorrecta.";
+      } else if (code === "TOO_MANY_ATTEMPTS_TRY_LATER"){
+        loginError = "Demasiados intentos seguidos — espera unos minutos y vuelve a probar.";
+      } else {
+        loginError = "No se ha podido conectar con el servidor de acceso (no es la contraseña). Puede ser tu conexión, o que esta red bloquee Firebase — prueba con datos móviles u otra red para confirmarlo.";
+      }
       render();
       var el = document.getElementById("login-password");
       if (el) el.focus();
